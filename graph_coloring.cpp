@@ -172,25 +172,32 @@ ColoringResult backtracking_color_with_k(const Graph& graph, int max_colors) {
 
 class Solucion {
     public:
-    Solucion(int pm, vector<int> c, vector<int>b) {
-        PM = pm;
-        this->c = c;
-        size = c.size();
-        benef = b;
-        X.resize(c.size);
+    Solucion(vector<vector<int>> & map, vector<int>b, int num_vertices) {
+        size = num_vertices;
+        colores.resize(size);
         nodos_podados = 0;
         nodos_generados = 0;
+        nodos_vivos = 0;
+        MdeMapa = map;
     }
     void IniciaComp(int k){
-       X[k] = -1; // valor NULO
+       colores[k] = -1; // valor NULO
     }
     void SigValComp(int k){
-        X[k]++; // Siguiente valor del dominio. -1->0->1->2
+        colores[k]++; // Siguiente valor del dominio. -1->0->1->...->N
     }
     bool TodosGenerados(int k) const{
-        return X[k]==2; // END
+        return colores[k]==size; // END cuando llegue al final del vector (N)
     }
-    bool Factible(int pos);
+    bool Factible(int p_actual) {
+        bool devolver = true;
+        for (int i = 0; i < MdeMapa[p_actual].size() && devolver; i++) { //recorre los adyacentes de cada región
+            if (colores[MdeMapa[p_actual][i]] == colores[p_actual]) {
+                devolver = false;
+            }
+        }
+        return devolver;
+    }
 
     //int Solucion::Decision(int k) const;
     //Obtener valor componente k, return X[k]
@@ -198,11 +205,9 @@ class Solucion {
         float coste = 0.0, beneficio = 0.0;
         cout << "{";
         for (int i = 0; i < size; i++) {
-            if (X[i] != 0) {
-                cout << " " << (char)(i+'A');
-                coste += c[i];
-                beneficio += benef[i];
-            }
+            cout << " " << (char)(i+'A');
+            coste += c[i];
+            beneficio += benef[i];
         }
         cout << " }\tcoste: " << coste << " " << "beneficio: " << beneficio << endl;
     }
@@ -215,13 +220,52 @@ class Solucion {
         cout << "Nodos generados: " << nodos_generados << endl;
     }
 
+    int getSize() {
+        return size;
+    }
+
+    void VueltaAtras(int k) {
+        if (pais == colores.size()) {
+            return;
+        }
+        colores[k] = 0;
+    }
+
+    void ActualizaSolucion() {
+
+    }
+
     private:
-        vector<int> X; // X, aka soluciones posibles
-        int PM; // prime minister aka presupuesto maximo
-        vector<int> c; // coste
-        vector<int> benef; // beneficio
-        int nodos_podados, nodos_generados;
+        vector<int> colores; // X, aka soluciones posibles
+        vector<vector<int>> MdeMapa; // coste
+        int nodos_podados, nodos_generados, nodos_vivos;
+        int size;
 };
+
+void bb_coloreo_grafos(Solucion & sol, int k) {
+    queue<Solucion> cola;
+    fin = false;
+    cola.insert(sol);
+
+    do {
+        sol
+    } while (!cola.empty());
+
+    if (k == sol.getSize()) {
+        sol.ProcesaSolucion();
+    }
+    else {
+        sol.IniciaComp(k);
+        sol.SigValComp(k);
+        while (!sol.TodosGenerados(k)) {
+            if (sol.Factible(k)) {
+                bb_coloreo_grafos(sol, k);
+                sol.VueltaAtras(k+1);
+            }
+            sol.SigValComp(k);
+        }
+    }
+}
 
 
 /**
@@ -236,6 +280,37 @@ ColoringResult branch_and_bound_min_colors(const Graph& graph) {
     // needed to color the graph. Use a greedy upper bound and a lower bound based on the
     // current partial assignment to prune the search.
 
+    queue<Solucion> cola;
+    fin = false;
+    cola.insert(sol);
+    /*
+     * Metemos la raíz en la cola,
+     * En el do-while, hacemos un nodo = raiz (sol = cola.front)
+     * Si la raiz es factible (función de factibilidad)
+     * pais k = sol.comp() (que sería el país primero a recorrer, asumo yo)
+     * k++ (inicializa a 0)
+     * for (mapa[0][i], mientras tenga paises adyacentes, i++)
+     * si es factible (funcion de factibilidad): ver si es solución.
+     * Si es solución, sol.actualizaSolucion() hace que las cotas se ajusten
+     * si no es solución, se inserta como solución parcial en la cola.
+     */
+    do {
+        sol = cola.front(); // definir
+        if (sol.Factible()) { // factible distinto (no pos)
+            k = sol.CompENodo();
+            k++;
+            for (sol.PrimerValorComp(k); sol.HayMasValores(k); sol.SigValComp(k)) {
+                if (sol.Factible()) {
+                    if (sol.NumComponentes()==sol.size()) {
+                        sol.ActualizaSolucion();
+                    } else {
+                        cola.insert(sol);
+                    }
+                }
+            }
+        }
+        cola.pop_front();
+    } while (!cola.empty());
 
     return result;
 }

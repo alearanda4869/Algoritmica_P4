@@ -77,20 +77,20 @@ class Solucion {
         this->c = c;
         size = c.size();
         benef = b;
-        X.resize(size);
+        colores.resize(size);
         nodos_podados = 0;
         nodos_generados = 0;
     }
     void IniciaComp(int k){
-       X[k] = -1; // valor NULO
+       colores[k] = -1; // valor NULO
     }
     void SigValComp(int k){
-        X[k]++; // Siguiente valor del dominio. -1->0->1->2
+        colores[k]++; // Siguiente valor del dominio. -1->0->1->2
     }
     bool TodosGenerados(int k) const{
-        return X[k]==2; // END
+        return colores[k]==2; // END
     }
-    bool Factible(int pos);
+    bool Factible(int p_actual);
 
     //int Solucion::Decision(int k) const;
     //Obtener valor componente k, return X[k]
@@ -98,7 +98,7 @@ class Solucion {
         float coste = 0.0, beneficio = 0.0;
         cout << "{";
         for (int i = 0; i < size; i++) {
-            if (X[i] != 0) {
+            if (colores[i] != 0) {
                 cout << " " << (char)(i+'A');
                 coste += c[i];
                 beneficio += benef[i];
@@ -120,7 +120,7 @@ class Solucion {
     }
 
     private:
-        vector<int> X; // X, aka soluciones posibles
+        vector<int> colores; // X, aka soluciones posibles
         int PM; // prime minister aka presupuesto maximo
         vector<int> c; // coste
         vector<int> benef; // beneficio
@@ -128,11 +128,12 @@ class Solucion {
         int size;
 };
 
-bool Solucion::Factible(int pos){
+bool Solucion::Factible(int p_actual){
     //El coste (c) de los proyectos seleccionados no sobrepase el presupuesto (PM)
     float ps = 0.0;
-    for (int k=0; k<=pos; k++)
-        ps += X[k]*c[k];
+    for (int k=0; k<=p_actual; k++) {
+        ps += colores[k]*c[k];
+    }
     nodos_generados++;
     if (ps>PM) {
         nodos_podados++;
