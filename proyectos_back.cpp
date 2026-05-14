@@ -115,13 +115,17 @@ class Solucion {
         cout << "Nodos generados: " << nodos_generados << endl;
     }
 
-        int size;
+    int getSize() {
+        return size;
+    }
+
     private:
         vector<int> X; // X, aka soluciones posibles
         int PM; // prime minister aka presupuesto maximo
         vector<int> c; // coste
         vector<int> benef; // beneficio
         int nodos_podados, nodos_generados;
+        int size;
 };
 
 bool Solucion::Factible(int pos){
@@ -138,7 +142,7 @@ bool Solucion::Factible(int pos){
 
 
 void seleccion_proyectos(Solucion &s, int k) {
-    if (k == s.size) {
+    if (k == s.getSize()) {
         s.ProcesaSolucion();
     }
     else {
@@ -153,7 +157,7 @@ void seleccion_proyectos(Solucion &s, int k) {
     }
 }
 
-
+/*
 int main () {
     vector<int> proyecto = {2,3,5};
     vector<int> benef = {4,5,6};
@@ -161,4 +165,4 @@ int main () {
     Solucion S(8,proyecto, benef);
     seleccion_proyectos(S, 0);
     S.imprimeNodos();
-}
+}*/
