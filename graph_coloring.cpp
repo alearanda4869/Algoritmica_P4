@@ -178,7 +178,8 @@ class Solucion {
         nodos_podados = 0;
         nodos_generados = 0;
         nodos_vivos = 0;
-        MdeMapa = map;
+        //MdeMapa = map; // quitar
+        
     }
     void IniciaComp(int k){
        colores[k] = -1; // valor NULO
@@ -189,7 +190,7 @@ class Solucion {
     bool TodosGenerados(int k) const{
         return colores[k]==size; // END cuando llegue al final del vector (N)
     }
-    bool Factible(int p_actual) {
+    bool Factible(const vector<vector<int>> & MdeMapa, int p_actual) {
         bool devolver = true;
         for (int i = 0; i < MdeMapa[p_actual].size() && devolver; i++) { //recorre los adyacentes de cada región
             if (colores[MdeMapa[p_actual][i]] == colores[p_actual]) {
@@ -224,6 +225,16 @@ class Solucion {
         return size;
     }
 
+    int numComponentes() {
+        int contador = 0;
+        for (int i = 0; i < size; i++) {
+            if (colores[i] > -1 && colores[i] < size) {
+                contador++;
+            }
+        }
+        return contador;
+    }
+
     void VueltaAtras(int k) {
         if (pais == colores.size()) {
             return;
@@ -237,9 +248,10 @@ class Solucion {
 
     private:
         vector<int> colores; // X, aka soluciones posibles
-        vector<vector<int>> MdeMapa; // coste
+        //vector<vector<int>> MdeMapa; // coste
         int nodos_podados, nodos_generados, nodos_vivos;
         int size;
+        int cota_global;
 };
 
 void bb_coloreo_grafos(Solucion & sol, int k) {
@@ -289,18 +301,18 @@ ColoringResult branch_and_bound_min_colors(const Graph& graph) {
      * Si la raiz es factible (función de factibilidad)
      * pais k = sol.comp() (que sería el país primero a recorrer, asumo yo)
      * k++ (inicializa a 0)
-     * for (mapa[0][i], mientras tenga paises adyacentes, i++)
+     * for (mapa[k][i], mientras tenga paises adyacentes, i++)
      * si es factible (funcion de factibilidad): ver si es solución.
      * Si es solución, sol.actualizaSolucion() hace que las cotas se ajusten
      * si no es solución, se inserta como solución parcial en la cola.
-     */
+    */
     do {
         sol = cola.front(); // definir
         if (sol.Factible()) { // factible distinto (no pos)
             k = sol.CompENodo();
             k++;
-            for (sol.PrimerValorComp(k); sol.HayMasValores(k); sol.SigValComp(k)) {
-                if (sol.Factible()) {
+            for (int i = 0; i < graph.adj[k].size(); i++) {
+                if (sol.Factible(graph.adj, k)) {
                     if (sol.NumComponentes()==sol.size()) {
                         sol.ActualizaSolucion();
                     } else {
