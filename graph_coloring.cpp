@@ -239,165 +239,127 @@ ColoringResult backtracking_color_with_k(const Graph& graph, int max_colors) {
 
     return result;
 }
-/*
-class Solucion {
-    public:
-    Solucion(vector<vector<int>> & map, vector<int>b, int num_vertices) {
-        size = num_vertices;
-        colores.resize(size);
-        nodos_podados = 0;
-        nodos_generados = 0;
-        nodos_vivos = 0;
-        //MdeMapa = map; // quitar
-        
-    }
-    void IniciaComp(int k){
-       colores[k] = -1; // valor NULO
-    }
-    void SigValComp(int k){
-        colores[k]++; // Siguiente valor del dominio. -1->0->1->...->N
-    }
-    bool TodosGenerados(int k) const{
-        return colores[k]==size; // END cuando llegue al final del vector (N)
-    }
-    bool Factible(const vector<vector<int>> & MdeMapa, int p_actual) {
-        bool devolver = true;
-        for (int i = 0; i < MdeMapa[p_actual].size() && devolver; i++) { //recorre los adyacentes de cada región
-            if (colores[MdeMapa[p_actual][i]] == colores[p_actual]) {
-                devolver = false;
-            }
-        }
-        return devolver;
-    }
 
-    //int Solucion::Decision(int k) const;
-    //Obtener valor componente k, return X[k]
-    void ProcesaSolucion() {
-        float coste = 0.0, beneficio = 0.0;
-        cout << "{";
-        for (int i = 0; i < size; i++) {
-            cout << " " << (char)(i+'A');
-            coste += c[i];
-            beneficio += benef[i];
-        }
-        cout << " }\tcoste: " << coste << " " << "beneficio: " << beneficio << endl;
-    }
-    // Representa el proceso que se realiza cuando se alcanza una solución.
-    //Permite quedarnos con la mejor solución
-
-
-    void imprimeNodos() {
-        cout << endl << "Nodos podados: " << nodos_podados << endl;
-        cout << "Nodos generados: " << nodos_generados << endl;
-    }
-
-    int getSize() {
-        return size;
-    }
-
-    int numComponentes() {
-        int contador = 0;
-        for (int i = 0; i < size; i++) {
-            if (colores[i] > -1 && colores[i] < size) {
-                contador++;
-            }
-        }
-        return contador;
-    }
-
-    void VueltaAtras(int k) {
-        if (pais == colores.size()) {
-            return;
-        }
-        colores[k] = 0;
-    }
-
-    void ActualizaSolucion() {
-
-    }
-
-    private:
-        vector<int> colores; // X, aka soluciones posibles
-        //vector<vector<int>> MdeMapa; // coste
-        int nodos_podados, nodos_generados, nodos_vivos;
-        int size;
-        int cota_global;
+struct EstadoBnB {
+    vector<int> colors;
+    int current_vertex;
+    int max_color_used; // Actúa como nuestra cota inferior actual
 };
 
-void bb_coloreo_grafos(Solucion & sol, int k) {
-    queue<Solucion> cola;
-    fin = false;
-    cola.insert(sol);
+struct NodoBnB {
+    EstadoBnB estado;
 
-    do {
-        sol
-    } while (!cola.empty());
-
-    if (k == sol.getSize()) {
-        sol.ProcesaSolucion();
-    }
-    else {
-        sol.IniciaComp(k);
-        sol.SigValComp(k);
-        while (!sol.TodosGenerados(k)) {
-            if (sol.Factible(k)) {
-                bb_coloreo_grafos(sol, k);
-                sol.VueltaAtras(k+1);
-            }
-            sol.SigValComp(k);
+    bool operator<(const NodoBnB& other) const {
+        // Preferimos los estados que usan menos colores (minimizamos max_color_used)
+        if (estado.max_color_used != other.estado.max_color_used) {
+            return estado.max_color_used > other.estado.max_color_used;
         }
+        // A igual cantidad de colores, preferimos el nodo más profundo.
+        return estado.current_vertex < other.estado.current_vertex;
     }
-}*/
-
-
+};
 /**
  * @brief Encuentra el número mínimo de colores necesarios para colorear el grafo usando branch and bound.
  * @param graph El grafo a colorear.
  * @return ColoringResult con coloreo óptimo y estadísticas.
  */
-/*
 ColoringResult branch_and_bound_min_colors(const Graph& graph) {
-    ColoringResult result;
-    result.colors.assign(graph.num_vertices, -1);
     // TODO: Implement a branch and bound search that finds the smallest number of colors
     // needed to color the graph. Use a greedy upper bound and a lower bound based on the
     // current partial assignment to prune the search.
 
-    queue<Solucion> cola;
-    fin = false;
-    cola.insert(sol);
-    /*
-     * Metemos la raíz en la cola,
-     * En el do-while, hacemos un nodo = raiz (sol = cola.front)
-     * Si la raiz es factible (función de factibilidad)
-     * pais k = sol.comp() (que sería el país primero a recorrer, asumo yo)
-     * k++ (inicializa a 0)
-     * for (mapa[k][i], mientras tenga paises adyacentes, i++)
-     * si es factible (funcion de factibilidad): ver si es solución.
-     * Si es solución, sol.actualizaSolucion() hace que las cotas se ajusten
-     * si no es solución, se inserta como solución parcial en la cola.
-    */
-    /*
-    do {
-        sol = cola.front(); // definir
-        if (sol.Factible()) { // factible distinto (no pos)
-            k = sol.CompENodo();
-            k++;
-            for (int i = 0; i < graph.adj[k].size(); i++) {
-                if (sol.Factible(graph.adj, k)) {
-                    if (sol.NumComponentes()==sol.size()) {
-                        sol.ActualizaSolucion();
-                    } else {
-                        cola.insert(sol);
-                    }
+    ColoringResult result;
+    result.colors.assign(graph.num_vertices, -1);
+
+    // Si el grafo no tiene vértices, retornamos directamente.
+    if (graph.num_vertices == 0) {
+        result.success = true;
+        return result;
+    }
+
+    // 1. Obtener una Cota Superior inicial usando la heurística Greedy.
+    // Todo lo que sea >= a este upper_bound será podado.
+    vector<int> greedy_sol = greedy_coloring(graph);
+    int upper_bound = count_used_colors(greedy_sol);
+
+    // Guardamos la solución Greedy como la "mejor conocida" por ahora.
+    vector<int> best_colors = greedy_sol;
+
+    // 2. Inicializar la cola de prioridad (frontera)
+    priority_queue<NodoBnB> frontera;
+
+    EstadoBnB estado_inicial;
+    estado_inicial.colors.assign(graph.num_vertices, -1);
+    estado_inicial.current_vertex = 0;
+    estado_inicial.max_color_used = 0;
+
+    frontera.push({estado_inicial});
+    result.nodes_generated = 1; // Contamos el nodo raíz
+
+    // 3. Bucle principal de Branch and Bound
+    while (!frontera.empty()) {
+        // Actualizar estadísticas de frontera máxima
+        if (frontera.size() > result.max_live_nodes) {
+            result.max_live_nodes = frontera.size();
+        }
+
+        NodoBnB actual = frontera.top();
+        frontera.pop();
+
+        // Cota inferior (lower bound): Si este estado YA usa tantos o más colores
+        // que nuestra mejor solución encontrada, lo podamos y no lo exploramos más.
+        if (actual.estado.max_color_used >= upper_bound) {
+            result.nodes_pruned++;
+            continue;
+        }
+
+        // ¿Es una solución completa?
+        if (actual.estado.current_vertex == graph.num_vertices) {
+            // Como llegamos aquí y pasó la condición de upper_bound anterior,
+            // sabemos que es estrictamente mejor que la actual.
+            upper_bound = actual.estado.max_color_used;
+            best_colors = actual.estado.colors;
+            continue;
+        }
+
+        int v = actual.estado.current_vertex;
+
+        // Generar hijos: Probamos a asignar un color al vértice 'v'.
+        // Rompimiento de simetría: probamos los colores ya usados y EXACTAMENTE un color nuevo.
+        int limit_color = actual.estado.max_color_used;
+
+        for (int c = 0; c <= limit_color; ++c) {
+            // Verificar si el color 'c' entra en conflicto con los vecinos
+            if (is_color_valid(v, c, actual.estado.colors, graph)) {
+
+                int new_max_color = (c == limit_color) ? limit_color + 1 : limit_color;
+
+                // Poda por cota superior ANTES de generar el nodo (ahorra memoria)
+                if (new_max_color >= upper_bound) {
+                    result.nodes_pruned++;
+                    continue;
                 }
+
+                // Creamos el nuevo estado y lo añadimos a la cola
+                EstadoBnB nuevo_estado = actual.estado;
+                nuevo_estado.colors[v] = c;
+                nuevo_estado.current_vertex = v + 1;
+                nuevo_estado.max_color_used = new_max_color;
+
+                frontera.push({nuevo_estado});
+                result.nodes_generated++;
             }
         }
-        cola.pop_front();
-    } while (!cola.empty());
+    }
+
+    // 4. Preparar el resultado final
+    result.success = true;
+    result.colors = best_colors;
+    result.colors_used = upper_bound;
 
     return result;
-}*/
+}
+
 
 /**
  * @brief Imprime la solución de coloreo en la consola.
