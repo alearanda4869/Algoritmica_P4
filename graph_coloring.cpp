@@ -156,6 +156,55 @@ vector<int> greedy_coloring(const Graph& graph) {
 }
 
 /**
+ * @brief Función auxiliar recursiva para el algoritmo de backtracking.
+ * Adaptada para usar un único punto de salida (return) de forma segura.
+ * @param nivel Vértice actual que estamos intentando colorear.
+ * @param graph El grafo a colorear.
+ * @param max_colors Número máximo de colores permitidos.
+ * @param result Referencia al objeto ColoringResult para actualizar estado.
+ * @param current_live_nodes Número de nodos vivos en la rama actual.
+ * @return true si se encuentra la primera solución válida, false en caso contrario.
+ */
+bool backtracking_recursive(int nivel, const Graph& graph, int max_colors, ColoringResult& result, int current_live_nodes) {
+    bool solucion = false;
+
+    // Actualizamos el máximo de nodos vivos
+    if (current_live_nodes > result.max_live_nodes) {
+        result.max_live_nodes = current_live_nodes;
+    }
+
+    // Caso base: si hemos asignado color a todos los vértices (nodos)
+    if (nivel == graph.num_vertices) {
+        solucion = true; // Hemos encontrado una solución válida
+    }
+    else {
+        // Exploramos todos los colores posibles mientras no hayamos encontrado una solución
+        for (int c = 0; c < max_colors && !solucion; c++) {
+            result.nodes_generated++; // Generamos un nuevo nodo
+
+            // Comprobamos si el color 'c' es compatible (nuestra Función de Factibilidad)
+            if (is_color_valid(nivel, c, result.colors, graph)) {
+
+                result.colors[nivel] = c; // Añadimos el color a la solución parcial
+
+                // Avanzamos al siguiente vértice (recursión)
+                solucion = backtracking_recursive(nivel + 1, graph, max_colors, result, current_live_nodes + 1);
+
+                // Pola: Podamos/vuelta atras si esta rama no conduce a una solución
+                if (!solucion) {
+                    result.colors[nivel] = -1;
+                }
+            } else {
+                // Si no es compatible: podamos (no exploramos esa rama)
+                result.nodes_pruned++;
+            }
+        }
+    }
+
+    return solucion;
+}
+
+/**
  * @brief Intenta colorear el grafo usando backtracking con un máximo de max_colors.
  * @param graph El grafo a colorear.
  * @param max_colors Número máximo de colores permitidos.
@@ -167,9 +216,30 @@ ColoringResult backtracking_color_with_k(const Graph& graph, int max_colors) {
     // TODO: Implement a recursive backtracking search that assigns colors to each vertex
     // using at most `max_colors`. The algorithm should update `result.nodes_generated`,
     // `result.nodes_pruned` and `result.max_live_nodes`.
+
+    // Inicialización de contadores
+    result.nodes_generated = 1; // Contamos el nodo raíz
+    result.nodes_pruned = 0;
+    result.max_live_nodes = 1;
+    result.colors_used = 0;
+    result.success = false;
+
+    // En caso de que el grafo esté vacío, se acaba la función
+    if (graph.num_vertices == 0) {
+        result.success = true;
+    } else {
+        // Llamada inicial al backtracking desde el nivel 0 (primer vértice)
+        result.success = backtracking_recursive(0, graph, max_colors, result, 1);
+
+        // Si encontramos la solución, calculamos los colores reales usados
+        if (result.success) {
+            result.colors_used = count_used_colors(result.colors);
+        }
+    }
+
     return result;
 }
-
+/*
 class Solucion {
     public:
     Solucion(vector<vector<int>> & map, vector<int>b, int num_vertices) {
@@ -277,7 +347,7 @@ void bb_coloreo_grafos(Solucion & sol, int k) {
             sol.SigValComp(k);
         }
     }
-}
+}*/
 
 
 /**
@@ -285,6 +355,7 @@ void bb_coloreo_grafos(Solucion & sol, int k) {
  * @param graph El grafo a colorear.
  * @return ColoringResult con coloreo óptimo y estadísticas.
  */
+/*
 ColoringResult branch_and_bound_min_colors(const Graph& graph) {
     ColoringResult result;
     result.colors.assign(graph.num_vertices, -1);
@@ -306,6 +377,7 @@ ColoringResult branch_and_bound_min_colors(const Graph& graph) {
      * Si es solución, sol.actualizaSolucion() hace que las cotas se ajusten
      * si no es solución, se inserta como solución parcial en la cola.
     */
+    /*
     do {
         sol = cola.front(); // definir
         if (sol.Factible()) { // factible distinto (no pos)
@@ -325,7 +397,7 @@ ColoringResult branch_and_bound_min_colors(const Graph& graph) {
     } while (!cola.empty());
 
     return result;
-}
+}*/
 
 /**
  * @brief Imprime la solución de coloreo en la consola.
