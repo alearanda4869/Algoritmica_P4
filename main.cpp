@@ -8,6 +8,25 @@ using namespace std;
 Instrucciones de compilación: g++ -std=c++17 main.cpp graph_coloring.cpp -o graph_coloring
 */
 
+// Función para imprimir la estructura del grafo pq así se comprueba mejor la solución.
+void print_graph_structure(const Graph& graph) {
+    cout << "\n=== Estructura del Grafo (Lista de Adyacencia) ===" << endl;
+    for (int i = 0; i < graph.num_vertices; ++i) {
+        cout << "  Vértice " << i << " -> adyacente a: [";
+        if (graph.adj[i].empty()) {
+            cout << "sin conexiones";
+        } else {
+            for (size_t j = 0; j < graph.adj[i].size(); ++j) {
+                cout << graph.adj[i][j];
+                if (j < graph.adj[i].size() - 1) {
+                    cout << ", ";
+                }
+            }
+        }
+        cout << "]" << endl;
+    }
+    cout << "==================================================\n" << endl;
+}
 
 /**
  * @brief Función principal que carga un grafo, realiza coloreo voraz y ejecuta algoritmos de backtracking y branch-and-bound.
